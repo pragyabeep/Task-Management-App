@@ -19,8 +19,8 @@ jobs:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+            Backend/package-lock.json
+            Frontend/package-lock.json
 
       - name: Install & lint backend
         working-directory: ./backend
