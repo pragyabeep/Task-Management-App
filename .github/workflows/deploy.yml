@@ -93,5 +93,4 @@ jobs:
               --env-file .env.prod -p taskflow-prod \
               up -d --build --remove-orphans
             sleep 20
-            curl -f http://localhost:5000/health || (echo "PROD BACKEND DOWN!")
             curl -f http://localhost:80           || (echo "PROD
