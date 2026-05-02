@@ -93,4 +93,5 @@ jobs:
               --env-file .env.prod -p taskflow-prod \
               up -d --build --remove-orphans
             sleep 20
-            curl -f http://localhost:80           || (echo "PROD
+            curl -f http://localhost:80           || (echo "PROD FRONTEND DOWN!" && exit 1)
+            docker image prune -f
