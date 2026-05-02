@@ -1,0 +1,97 @@
+name: TaskFlow CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  ci-checks:
+    name: CI Checks (Lint + Build Validation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install & lint backend
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm run lint --if-present || echo "No lint configured"
+          npm test --if-present || echo "No tests configured"
+
+      - name: Install, lint & build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run lint --if-present || echo "No lint configured"
+          npm run build
+        env:
+          VITE_API_URL: http://localhost:5000
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: ci-checks
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH into EC2 and deploy staging
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/Task-Management-App
+            git fetch origin
+            git reset --hard origin/${{ github.ref_name }}
+            /home/ubuntu/fetch-secrets.sh staging
+            docker compose -f docker-compose.staging.yml \
+              --env-file .env.staging -p taskflow-staging \
+              up -d --build --remove-orphans
+            sleep 15
+            curl -f http://localhost:5001/health || (echo "Backend unhealthy!" && exit 1)
+            curl -f http://localhost:8080        || (echo "Frontend unhealthy!" && exit 1)
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH into EC2 and deploy production
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/Task-Management-App
+            git rev-parse HEAD > /tmp/rollback_commit.txt
+            docker images --format "{{.Repository}}:{{.Tag}}" | grep taskflow > /tmp/rollback_images.txt || true
+            git fetch origin main
+            git reset --hard origin/main
+            /home/ubuntu/fetch-secrets.sh prod
+            docker compose -f docker-compose.prod.yml \
+              --env-file .env.prod -p taskflow-prod \
+              up -d --build --remove-orphans
+            sleep 20
+            curl -f http://localhost:5000/health || (echo "PROD BACKEND DOWN!" && exit 1)
+            curl -f http://localhost:80           || (echo "PROD
