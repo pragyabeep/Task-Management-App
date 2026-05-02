@@ -2,7 +2,7 @@
 
 ## Overview
 
-TaskFlow is a modern, full-stack project and task management application designed to help teams collaborate, track progress, and stay productive. With an intuitive interface and comprehensive features, TaskFlow makes project management simple and efficient..
+TaskFlow is a modern, full-stack project and task management application designed to help teams collaborate, track progress, and stay productive. With an intuitive interface and comprehensive features, TaskFlow makes project management simple and efficient
 
 ## 🛠️ Tech Stack
 
