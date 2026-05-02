@@ -23,14 +23,14 @@ jobs:
             Frontend/package-lock.json
 
       - name: Install & lint backend
-        working-directory: ./backend
+        working-directory: ./Backend
         run: |
           npm ci
           npm run lint --if-present || echo "No lint configured"
           npm test --if-present || echo "No tests configured"
 
       - name: Install, lint & build frontend
-        working-directory: ./frontend
+        working-directory: ./Frontend
         run: |
           npm ci
           npm run lint --if-present || echo "No lint configured"
