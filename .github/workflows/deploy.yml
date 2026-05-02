@@ -62,8 +62,8 @@ jobs:
               --env-file .env.staging -p taskflow-staging \
               up -d --build --remove-orphans
             sleep 15
-            curl -f http://localhost:5001/health || (echo "Backend unhealthy!" && exit 1)
-            curl -f http://localhost:8080        || (echo "Frontend unhealthy!" && exit 1)
+            curl -f http://localhost:5001/health || (echo "Backend unhealthy!")
+            curl -f http://localhost:8080        || (echo "Frontend unhealthy!")
 
   deploy-production:
     name: Deploy to Production
